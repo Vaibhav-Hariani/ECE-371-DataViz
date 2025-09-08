@@ -1,8 +1,6 @@
 // setup() is called once at page-load
         function setup() {
-            const canvasContainer = document.querySelector('main');
-            let cnv = createCanvas(800, 800);
-            cnv.parent(canvasContainer);
+            createCanvas(windowWidth, windowHeight);
             angleMode(DEGREES);
             colorMode(HSL, 360, 100, 100, 1); // Hue, Saturation, Lightness, Alpha
         }
@@ -145,3 +143,7 @@
             line(-(width - sw), 0, width / 2, 0);   // X-axis
             pop(); // Restore original styles
         }
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
