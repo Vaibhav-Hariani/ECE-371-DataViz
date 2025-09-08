@@ -92,8 +92,8 @@
         function drawGrid(h, sw, sh) {
             push(); // Isolate styles and transformations for the grid
             // --- Draw Angle Reference Lines & Labels ---
-            const lineLength = (width - sw);
-            const labelRadius = (width - sw);
+            const lineLength = (height- sh);
+            const labelRadius = (width - sh);
             const isEvenHour = h % 2 === 0;
             stroke(240, 5, 25); // Faint gray for lines
             strokeWeight(1);
