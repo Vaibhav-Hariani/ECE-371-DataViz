@@ -32,8 +32,8 @@
                 maxAngle = map(m + s/60, 0, 60, 90, 0);
             }
 
-            let maxMagnitude = width - start_width;
-            let minMagnitude = width * 0.1; 
+            let maxMagnitude = min(width - start_width, height - start_height);
+            let minMagnitude = min(width - start_width, height - start_height) * 0.1; 
             let magnitude = map(h + m/60, 0, 23, minMagnitude, maxMagnitude);
 
             // --- Pendulum Swing (Milliseconds) ---
@@ -54,8 +54,8 @@
         /** Draws the color legend for the hours directly on the canvas. */
         function drawLegend() {
             // Position and dimensions for the legend
-            const legendY = 25;
-            const legendHeight = 15;
+            const legendY = 0.05 * height;
+            const legendHeight = 0.02 * height;
             const legendWidth = width * 0.8;
             const legendX = (width - legendWidth) / 2;
 
@@ -92,8 +92,8 @@
         function drawGrid(h, sw, sh) {
             push(); // Isolate styles and transformations for the grid
             // --- Draw Angle Reference Lines & Labels ---
-            const lineLength = (height- sh);
-            const labelRadius = (width - sh);
+            const lineLength = min(height- sh, width - sw);
+            const labelRadius = min(height- sh, width - sw);
             const isEvenHour = h % 2 === 0;
             stroke(240, 5, 25); // Faint gray for lines
             strokeWeight(1);
