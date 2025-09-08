@@ -1,48 +1,40 @@
 // setup() is called once at page-load
-function setup() {
-    createCanvas(800,600); // make an HTML canvas element width x height pixels
-    //array of length 36000 (60 seconds, 60 times a second)
-    path = [];
-    angleMode(DEGREES);
-}
+        function setup() {
+            const canvasContainer = document.querySelector('main');
+            let cnv = createCanvas(800, 800);
+            cnv.parent(canvasContainer);
+            angleMode(DEGREES);
+            colorMode(HSL, 360, 100, 100, 1); // Hue, Saturation, Lightness, Alpha
+        }
 
         function draw() {
-            background(26, 26, 26);
+            background(20);
+            // --- Draw the Legend onto the Canvas ---
+            drawLegend();
             
-            // --- Time Calculation ---
             const now = new Date();
             const h = now.getHours();
             const m = now.getMinutes();
             const s = now.getSeconds();
             const ms = now.getMilliseconds();
-
-            // Map the current hour to a hue value for color
+          
             const currentHue = map(h + m/60, 0, 24, 0, 360);
-            
-            // --- Draw the fading path ---
-            noFill();
-            strokeWeight(1.5);
-            for (let i = 1; i < path.length; i++) {
-                const currentPoint = path[i];
-                const prevPoint = path[i-1];
-                const maxOpacity = 0.2; // Opacity is now 0-1 in HSL mode
-                const alpha = map(i, 0, path.length, 0, maxOpacity);
-                
-                stroke(currentHue, 90, 65, alpha);
-                line(prevPoint.x, prevPoint.y, currentPoint.x, currentPoint.y);
-            }
-
-            // Translate to the center for the main pendulum and grid
-            translate(width / 2, height / 2);
-            
-            drawGrid();
+            let start_height = height / 3;
+            let start_width = width / 2;
+            translate(start_width, start_height);            
+            drawGrid(h, start_width, start_height);
+                      
             
             // --- Max Angle (Minute) & Magnitude (Hour) ---
-            const minuteCycle = map(m + s/60, 0, 60, 0, 360);
-            const swingWidth = abs(sin(minuteCycle * 2));
-            const maxAngle = map(swingWidth, 0, 1, 0, 85);
+            let maxAngle;
+            // The swing width now operates on a 2-hour cycle
+            if (h % 2 === 0) { // On even hours (0, 2, 4...), the swing increases from 0° to 90°
+                maxAngle = map(m + s/60, 0, 60, 0, 90);
+            } else { // On odd hours (1, 3, 5...), the swing decreases from 90° to 0°
+                maxAngle = map(m + s/60, 0, 60, 90, 0);
+            }
 
-            let maxMagnitude = width * 0.48;
+            let maxMagnitude = width - start_width;
             let minMagnitude = width * 0.1; 
             let magnitude = map(h + m/60, 0, 23, minMagnitude, maxMagnitude);
 
@@ -51,68 +43,105 @@ function setup() {
             const swingCycle = map(totalMilliseconds, 0, 2000, 0, 360);
             const oscillator = cos(swingCycle);
             const displayAngle = 90 + oscillator * maxAngle;
-            console.log(maxAngle);
             
             // --- Drawing Pendulum (Trigonometry) ---
             const endX = magnitude * cos(displayAngle);
             const endY = magnitude * sin(displayAngle);
             
-            
+            stroke(currentHue, 90, 65); // Set the color for the pendulum
             strokeWeight(4);
             strokeCap(ROUND);
             line(0, 0, endX, endY);
-
-            // --- Path Tracing Logic ---
-                let tipX = width / 2 + endX;
-                let tipY = height / 2 + endY;
-                path.push(createVector(tipX, tipY));
-
-                if (path.length > 3600) {
-                    path.shift();
-                }
-          createLegend();
         }
+        /** Draws the color legend for the hours directly on the canvas. */
+        function drawLegend() {
+            // Position and dimensions for the legend
+            const legendY = 25;
+            const legendHeight = 15;
+            const legendWidth = width * 0.8;
+            const legendX = (width - legendWidth) / 2;
 
-function drawGrid() {
-            let spacing = 20;
-            stroke(60, 60, 60);
-            strokeWeight(1);
-            // Draw vertical lines
-            for (let x = -width / 2; x < width / 2; x += spacing) {
-                line(x, -height / 2, x, height / 2);
-            }
-            // Draw horizontal lines
-            for (let y = -height / 2; y < height / 2; y += spacing) {
-                line(-width / 2, y, width / 2, y);
-            }
-            // Draw thicker center axes
-            stroke(90, 90, 90);
-            strokeWeight(1.5);
-            line(0, -height / 2, 0, height / 2); // Y-axis
-            line(-width / 2, 0, width / 2, 0);   // X-axis
-        }
-
-function legend() {
-  const bar = createElement('div');
-              bar.className = 'legend-bar';
-            const labels = document.createElement('div');
-            labels.className = 'legend-labels';
-
+            // Draw the color bar ticks
+            const tickWidth = legendWidth / 24;
             for (let i = 0; i < 24; i++) {
-                const tick = document.createElement('div');
-                tick.className = 'legend-tick';
                 const hue = map(i, 0, 24, 0, 360);
-                tick.style.backgroundColor = `hsl(${hue}, 90%, 65%)`;
-                bar.appendChild(tick);
+                fill(hue, 90, 65);
+                noStroke();
+                rect(legendX + i * tickWidth, legendY, tickWidth, legendHeight, 2);
             }
             
-            ['0h', '6h', '12h', '18h', '24h'].forEach(text => {
-                const label = document.createElement('span');
-                label.textContent = text;
-                labels.appendChild(label);
-            });
+            // Draw the text labels
+            fill(240, 5, 70); // Light gray for text
+            noStroke();
+            textSize(12);
+            textAlign(CENTER, TOP);
 
-            legendContainer.appendChild(bar);
-            legendContainer.appendChild(labels);  
+            const labelY = legendY + legendHeight + 5;
+            const numLabels = 5;
+            for (let i = 0; i < numLabels; i++) {
+                const textX = legendX + (i / (numLabels - 1)) * legendWidth;
+                const hourText = (i * 6) + 'h';
+                // Adjust alignment for edge labels for a cleaner look
+                if (i === 0) textAlign(LEFT, TOP);
+                else if (i === numLabels - 1) textAlign(RIGHT, TOP);
+                else textAlign(CENTER, TOP);
+                
+                text(hourText, textX, labelY);
+            }
+        }
 
-}
+        /** Draws the axes and angle reference lines. */
+        function drawGrid(h, sw, sh) {
+            push(); // Isolate styles and transformations for the grid
+            // --- Draw Angle Reference Lines & Labels ---
+            const lineLength = (width - sw);
+            const labelRadius = (width - sw);
+            const isEvenHour = h % 2 === 0;
+            stroke(240, 5, 25); // Faint gray for lines
+            strokeWeight(1);
+            fill(240, 5, 50); // Faint gray for text
+            textSize(10);
+            textAlign(CENTER, CENTER);            
+        
+            const anglesAndLabels = [
+                { angle: 22.5, evenLabel: '15', oddLabel: '45' },
+                { angle: 45,   evenLabel: '30', oddLabel: '30' },
+                { angle: 67.5, evenLabel: '45', oddLabel: '15' },
+            ];
+
+            for (const item of anglesAndLabels) {
+                // Draw lines on both sides of the vertical axis
+                const rightAngle = 90 + item.angle;
+                const leftAngle = 90 - item.angle;
+                
+                const x2_right = lineLength * cos(rightAngle);
+                const y2_right = lineLength * sin(rightAngle);
+                line(0, 0, x2_right, y2_right);
+
+                const x2_left = lineLength * cos(leftAngle);
+                const y2_left = lineLength * sin(leftAngle);
+                line(0, 0, x2_left, y2_left);
+
+                // Choose the correct label based on the hour
+                const labelText = isEvenHour ? item.evenLabel : item.oddLabel;
+
+                // Add labels
+                const labelX_right = labelRadius * cos(rightAngle);
+                const labelY_right = labelRadius * sin(rightAngle);
+                text(labelText, labelX_right, labelY_right);
+
+                const labelX_left = labelRadius * cos(leftAngle);
+                const labelY_left = labelRadius * sin(leftAngle);
+                text(labelText, labelX_left, labelY_left);
+            }
+            
+            textAlign(CENTER, BOTTOM);
+            text('Hours', 0, -labelRadius);
+
+            // --- Draw Main Axes ---
+            stroke(240, 5, 30); // Slightly brighter gray for axes
+            strokeWeight(1.5);
+            line(0, 0, 0, height - sh); // Y-axis
+            line(-(width - sw), 0, width / 2, 0);   // X-axis
+            pop(); // Restore original styles
+        }
